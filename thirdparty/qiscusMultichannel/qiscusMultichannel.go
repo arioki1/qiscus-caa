@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 )
@@ -217,13 +216,12 @@ func (q *MultichannelConfig) Login(ctx context.Context, req qiscusRequest.LoginQ
 
 func (q *MultichannelConfig) AssignAgentToChatRoom(ctx context.Context, req qiscusRequest.AssignAgentRequest) (*qiscusResponse.QiscusResponse, error) {
 
-	data := url.Values{}
-	data.Set("room_id", req.RoomID)
-	data.Set("agent_id", strconv.Itoa(req.AgentID))
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
 
-	httpResp, err := q.sendRequest(ctx, "/api/v1/admin/service/assign_agent",
-		http.MethodPost, "application/x-www-form-urlencoded",
-		strings.NewReader(data.Encode()))
+	httpResp, err := q.sendRequest(ctx, "/api/v1/admin/service/assign_agent", http.MethodPost, "application/json", strings.NewReader(string(b)))
 	if err != nil {
 		return nil, err
 	}
@@ -364,12 +362,7 @@ func (q *MultichannelConfig) sendRequest(ctx context.Context, uri, method, conte
 	}
 
 	if resp.StatusCode != 200 {
-		respErr := new(qiscusResponse.Error)
-		if err := json.Unmarshal(responseBody, &respErr); err != nil {
-			return nil, fmt.Errorf("an error occured: %v", resp.Status)
-		} else {
-			return nil, fmt.Errorf(respErr.Errors)
-		}
+		return nil, errors.New(string(responseBody))
 	}
 
 	return responseBody, nil

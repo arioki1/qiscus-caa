@@ -8,7 +8,9 @@ import (
 	"github.com/arioki1/qiscus-caa/helpers"
 	"github.com/arioki1/qiscus-caa/src/api/v1/model"
 	"github.com/arioki1/qiscus-caa/thirdparty/qiscusMultichannel"
+	"github.com/arioki1/qiscus-caa/thirdparty/qiscusMultichannel/qiscusRequest"
 	"github.com/hibiken/asynq"
+	"time"
 )
 
 type qiscusTask struct {
@@ -36,11 +38,51 @@ func (q *qiscusTask) AssignAgent(ctx context.Context, roomId string) (interface{
 		BaseUrl:   q.cfg.GetQismoBaseURL(),
 	}
 	qClient := qiscusMultichannel.NewQiscusMultichannelClient(qConfig)
+	limit := 15
+	reqGetAgent := qiscusRequest.GetAgents{
+		RoomId: &roomId,
+		Limit:  &limit,
+	}
+	alreadyAssigned := false
+	var errorAssigned error
 
-	//TODO ASSIGN AGENT
-	//delay 1 minute
-	fmt.Println(qClient)
-	return nil, 0, nil
+	for !alreadyAssigned {
+		agents, err := qClient.GetAgents(ctx, reqGetAgent)
+		if err != nil {
+			alreadyAssigned = true
+			errorAssigned = err
+		}
+
+		if len(agents.Data.Agents) > 0 {
+			for _, agent := range agents.Data.Agents {
+				if agent.IsAvailable && agent.CurrentCustomerCount < 2 && agent.TypeAsString == "agent" {
+					reqAssignAgent := qiscusRequest.AssignAgentRequest{
+						AgentID:            agent.Id,
+						RoomID:             roomId,
+						ReplaceLatestAgent: true,
+					}
+
+					if _, err := qClient.AssignAgentToChatRoom(ctx, reqAssignAgent); err != nil {
+						alreadyAssigned = true
+						errorAssigned = err
+					} else {
+						alreadyAssigned = true
+					}
+					break
+				}
+			}
+		} else {
+			alreadyAssigned = true
+			errorAssigned = fmt.Errorf("no agent available")
+		}
+
+		if !alreadyAssigned {
+			//sleep 30 seconds
+			time.Sleep(30 * time.Second)
+		}
+	}
+
+	return nil, 0, errorAssigned
 }
 
 func NewQiscusCAARepository(cfg config.Config) model.QiscusCAARepository {
