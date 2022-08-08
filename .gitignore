@@ -1,0 +1,11 @@
+.env
+env
+cred.json
+credential.json
+docker-compose.yml
+__debug_bin
+
+bin/
+.idea/
+session.txt
+unzipped/
