@@ -10,6 +10,7 @@ import (
 	"github.com/arioki1/qiscus-caa/thirdparty/qiscusMultichannel"
 	"github.com/arioki1/qiscus-caa/thirdparty/qiscusMultichannel/qiscusRequest"
 	"github.com/hibiken/asynq"
+	"time"
 )
 
 type qiscusWebhook struct {
@@ -29,7 +30,8 @@ func (q *qiscusWebhook) CustomAgentAllocation(ctx context.Context, req *qiscusRe
 	}
 
 	if isNewTask {
-		if _, err := clientAsynq.Enqueue(task, asynq.MaxRetry(2)); err != nil {
+		deadline := time.Now().Add(time.Hour * 24)
+		if _, err := clientAsynq.Enqueue(task, asynq.MaxRetry(2), asynq.Deadline(deadline)); err != nil {
 			if err.Error() != "task ID conflicts with another task" {
 				helpers.PrintErrStringLog(fmt.Sprintf("failed to create task set CustomAgentAllocation error: %v", err.Error()))
 			}
