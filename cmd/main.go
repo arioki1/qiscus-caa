@@ -10,10 +10,7 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		return
-	}
+	_ = godotenv.Load()
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
