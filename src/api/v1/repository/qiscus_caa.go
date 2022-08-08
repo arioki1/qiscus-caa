@@ -38,7 +38,7 @@ func (q *qiscusTask) AssignAgent(ctx context.Context, roomId string) (interface{
 		BaseUrl:   q.cfg.GetQismoBaseURL(),
 	}
 	qClient := qiscusMultichannel.NewQiscusMultichannelClient(qConfig)
-	limit := 15
+	limit := 50
 	reqGetAgent := qiscusRequest.GetAgents{
 		RoomId: &roomId,
 		Limit:  &limit,

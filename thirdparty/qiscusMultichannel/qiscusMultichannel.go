@@ -184,7 +184,7 @@ func (q *MultichannelConfig) GetAgents(ctx context.Context, par qiscusRequest.Ge
 		return nil, err
 	}
 
-	u := "/api/v2/admin/agents?" + v.Encode()
+	u := "/api/v2/admin/service/other_agents?" + v.Encode()
 	httpResp, err := q.sendRequest(ctx, u, http.MethodGet, "application/json", nil)
 	if err != nil {
 		return nil, err
